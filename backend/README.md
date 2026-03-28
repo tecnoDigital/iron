@@ -24,3 +24,14 @@ Base backend scaffold for IronPay MVP.
 - Auth status and logout endpoints
 - Google token persistence in SQLite (`google_tokens`)
 - Dedicated encryption key for Google refresh token (`GOOGLE_TOKEN_ENCRYPTION_KEY`)
+
+## Scope (Sprint 3)
+
+- Google auth startup validation (`connected` / `reauth_required` / `no_google_auth`)
+- Standardized Google auth state mapping (`NO_GOOGLE_AUTH` / `GOOGLE_CONNECTED` / `REAUTH_REQUIRED`)
+- Google status endpoint payload aligned with auth states (`GET /google/status`)
+
+## Scope (Sprint 4)
+
+- Auth audit trail for login accepted/rejected and logout (`audit_logs`)
+- Health endpoint explicit operating message for port 3000 (`todo correcto`)

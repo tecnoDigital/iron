@@ -16,6 +16,11 @@ import { webhookRouter } from "./modules/webhooks/webhook.routes";
 
 export const app = express();
 
+export const buildHealthPayload = (port: number): { status: string; message: string } => ({
+  status: "ok",
+  message: port === 3000 ? "todo correcto" : "ok"
+});
+
 app.use(helmet());
 app.use(cors({ origin: true, credentials: true }));
 app.use(requestLoggerMiddleware);
@@ -24,7 +29,7 @@ app.use(express.json());
 app.use(cookieParser(env.SESSION_SECRET));
 
 app.get("/health", (_req, res) => {
-  res.status(200).json({ status: "ok" });
+  res.status(200).json(buildHealthPayload(env.PORT));
 });
 
 app.use("/auth", authRouter);

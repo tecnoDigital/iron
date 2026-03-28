@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { type Request, Router } from "express";
 
 import { ALLOWED_EMAILS } from "../../config/allowedEmails";
 import { env } from "../../config/env";
@@ -13,10 +13,32 @@ import {
   touchSession
 } from "./session.store";
 import { GoogleAuthService } from "../google/googleAuth.service";
+import { mapGoogleConnectionToAuthState } from "../google/google.state";
+import { AuditService } from "../audit/audit.service";
+import { AUTH_AUDIT_ACTIONS } from "./auth.audit";
 
 export const authRouter = Router();
 const authService = new AuthService();
 const googleAuthService = new GoogleAuthService();
+const auditService = new AuditService();
+
+const buildRequestMetadata = (req: Request): Record<string, unknown> => ({
+  ip: req.ip,
+  userAgent: req.get("user-agent") ?? "unknown"
+});
+
+const recordLoginRejected = (req: Request, reason: string, email?: string | null): void => {
+  auditService.record({
+    action: AUTH_AUDIT_ACTIONS.LOGIN_REJECTED,
+    entityType: "auth",
+    entityId: email ?? "anonymous",
+    metadata: {
+      reason,
+      ...(email ? { email } : {}),
+      ...buildRequestMetadata(req)
+    }
+  });
+};
 
 authRouter.get("/google/start", (_req, res) => {
   if (!googleAuthService.isConfigured()) {
@@ -39,11 +61,13 @@ authRouter.get("/google/callback", async (req, res) => {
   const state = String(req.query.state ?? "").trim();
 
   if (!code) {
+    recordLoginRejected(req, "missing_code");
     res.status(400).json({ error: "missing_code" });
     return;
   }
 
   if (!state || !consumeOAuthState(state)) {
+    recordLoginRejected(req, "invalid_state");
     res.status(400).json({ error: "invalid_state" });
     return;
   }
@@ -56,21 +80,25 @@ authRouter.get("/google/callback", async (req, res) => {
     email = oauthResult.email;
     oauthTokens = oauthResult.tokens;
   } catch {
+    recordLoginRejected(req, "oauth_exchange_failed");
     res.status(401).json({ error: "oauth_exchange_failed", state: "REAUTH_REQUIRED" });
     return;
   }
 
   if (!email) {
+    recordLoginRejected(req, "invalid_google_profile");
     res.status(401).json({ error: "invalid_google_profile", state: "ACCESS_DENIED" });
     return;
   }
 
   if (!authService.isAllowedEmail(email, ALLOWED_EMAILS)) {
+    recordLoginRejected(req, "email_not_allowlisted", email);
     res.status(403).json({ state: "ACCESS_DENIED" });
     return;
   }
 
   if (!oauthTokens) {
+    recordLoginRejected(req, "oauth_tokens_missing", email);
     res.status(401).json({ error: "oauth_exchange_failed", state: "REAUTH_REQUIRED" });
     return;
   }
@@ -78,6 +106,16 @@ authRouter.get("/google/callback", async (req, res) => {
   googleAuthService.saveTokens(oauthTokens);
 
   const session = createSession(email);
+
+  auditService.record({
+    action: AUTH_AUDIT_ACTIONS.LOGIN_SUCCESS,
+    entityType: "auth",
+    entityId: session.id,
+    metadata: {
+      email: session.email,
+      ...buildRequestMetadata(req)
+    }
+  });
 
   res.cookie(SESSION_COOKIE_NAME, session.id, {
     httpOnly: true,
@@ -94,6 +132,17 @@ authRouter.post("/logout", (req, res) => {
   const sessionId = req.signedCookies?.[SESSION_COOKIE_NAME] as string | undefined;
 
   if (sessionId) {
+    const session = getSession(sessionId);
+    auditService.record({
+      action: AUTH_AUDIT_ACTIONS.LOGOUT,
+      entityType: "auth",
+      entityId: sessionId,
+      metadata: {
+        ...(session ? { email: session.email } : {}),
+        ...buildRequestMetadata(req)
+      }
+    });
+
     deleteSession(sessionId);
   }
 
@@ -104,13 +153,9 @@ authRouter.post("/logout", (req, res) => {
 authRouter.get("/status", async (req, res) => {
   const googleStatus = await googleAuthService.getConnectionStatus();
 
-  if (googleStatus === "no_google_auth") {
-    res.status(200).json({ state: "NO_GOOGLE_AUTH" });
-    return;
-  }
-
-  if (googleStatus === "reauth_required") {
-    res.status(200).json({ state: "REAUTH_REQUIRED" });
+  const googleState = mapGoogleConnectionToAuthState(googleStatus);
+  if (googleState !== "GOOGLE_CONNECTED") {
+    res.status(200).json({ state: googleState });
     return;
   }
 
