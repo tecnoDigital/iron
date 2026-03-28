@@ -1,0 +1,10 @@
+export type CallJobState =
+  | "QUEUED"
+  | "LOCKED"
+  | "DIALING"
+  | "IN_PROGRESS"
+  | "COMPLETED_SUCCESS"
+  | "COMPLETED_NO_ANSWER"
+  | "COMPLETED_FAILED"
+  | "NEEDS_RETRY"
+  | "CANCELLED";

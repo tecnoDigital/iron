@@ -1,0 +1,7 @@
+export type AuthState =
+  | "NO_SESSION"
+  | "SESSION_ACTIVE"
+  | "NO_GOOGLE_AUTH"
+  | "GOOGLE_CONNECTED"
+  | "REAUTH_REQUIRED"
+  | "ACCESS_DENIED";
