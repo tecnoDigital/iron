@@ -43,3 +43,9 @@ Base backend scaffold for IronPay MVP.
 - Sync run persistence in SQLite (`sheet_sync_runs`) with latest run query
 - Snapshot persistence in SQLite (`snapshots`) with incremental versioning
 - Endpoints to execute sync + snapshot and fetch latest state (`POST /sync/run`, `GET /sync/latest`)
+
+## Scope (Sprint 6)
+
+- Campaign creation from latest snapshot with queued call job generation (`POST /campaigns/create`)
+- Campaign state transitions for start/pause/resume (`POST /campaigns/:campaignId/start|pause|resume`)
+- Campaign lookup endpoints with job state summary (`GET /campaigns/latest`, `GET /campaigns/:campaignId`)
