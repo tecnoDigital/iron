@@ -35,3 +35,11 @@ Base backend scaffold for IronPay MVP.
 
 - Auth audit trail for login accepted/rejected and logout (`audit_logs`)
 - Health endpoint explicit operating message for port 3000 (`todo correcto`)
+- Sheet validation endpoint with configurable column mapping (`POST /sync/validate`)
+- Validation summary for total/valid/invalid/duplicate rows using Google Sheets or mock rows
+
+## Scope (Sprint 5)
+
+- Sync run persistence in SQLite (`sheet_sync_runs`) with latest run query
+- Snapshot persistence in SQLite (`snapshots`) with incremental versioning
+- Endpoints to execute sync + snapshot and fetch latest state (`POST /sync/run`, `GET /sync/latest`)

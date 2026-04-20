@@ -5,7 +5,12 @@ import { oauthConfig } from "../../config/oauth";
 import { type GoogleConnectionStatus } from "./google.types";
 import { loadGoogleTokenSnapshot, saveGoogleTokenSnapshot } from "./googleToken.store";
 
-const OAUTH_SCOPES = ["openid", "email", "profile"];
+const OAUTH_SCOPES = [
+  "openid",
+  "email",
+  "profile",
+  "https://www.googleapis.com/auth/spreadsheets.readonly"
+];
 
 export class GoogleAuthService {
   private oauthClient = new google.auth.OAuth2(

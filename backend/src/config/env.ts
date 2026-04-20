@@ -14,7 +14,10 @@ const EnvSchema = z.object({
   ALLOWED_EMAIL_2: z.string().email(),
   GOOGLE_CLIENT_ID: z.string().optional(),
   GOOGLE_CLIENT_SECRET: z.string().optional(),
-  GOOGLE_REDIRECT_URI: z.string().optional()
+  GOOGLE_REDIRECT_URI: z.string().optional(),
+  GOOGLE_SHEET_ID: z.string().optional(),
+  GOOGLE_SHEET_RANGE: z.string().default("Sheet1!A:Z"),
+  GOOGLE_SHEET_MOCK_ROWS: z.string().optional()
 });
 
 export const env = EnvSchema.parse(process.env);
