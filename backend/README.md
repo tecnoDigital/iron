@@ -49,3 +49,9 @@ Base backend scaffold for IronPay MVP.
 - Campaign creation from latest snapshot with queued call job generation (`POST /campaigns/create`)
 - Campaign state transitions for start/pause/resume (`POST /campaigns/:campaignId/start|pause|resume`)
 - Campaign lookup endpoints with job state summary (`GET /campaigns/latest`, `GET /campaigns/:campaignId`)
+
+## Scope (Sprint 7)
+
+- Sequential call runner to take one queued job at a time from running campaigns
+- Lock + dispatch flow integrated with provider adapter and attempt persistence (`call_attempts`)
+- Worker loop tick to execute runner continuously in controlled intervals

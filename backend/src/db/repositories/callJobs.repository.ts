@@ -152,6 +152,68 @@ export class CallJobsRepository {
     }
   }
 
+  getNextQueued(campaignId: string): CallJobRecord | null {
+    const db = openDatabase();
+
+    try {
+      const row = db
+        .prepare(
+          `SELECT id, campaign_id, contact_name, contact_phone, amount_decimal, state, lock_until, attempt_count, last_error, created_at, updated_at
+           FROM ${callJobsTable}
+           WHERE campaign_id = ? AND state = 'QUEUED'
+           ORDER BY created_at ASC, id ASC
+           LIMIT 1`
+        )
+        .get(campaignId) as
+        | {
+            id: string;
+            campaign_id: string;
+            contact_name: string;
+            contact_phone: string;
+            amount_decimal: string;
+            state: string;
+            lock_until: string | null;
+            attempt_count: number;
+            last_error: string | null;
+            created_at: string;
+            updated_at: string;
+          }
+        | undefined;
+
+      return row ? mapRow(row) : null;
+    } finally {
+      db.close();
+    }
+  }
+
+  updateState(jobId: string, state: CallJobState, lastError?: string | null): void {
+    const db = openDatabase();
+
+    try {
+      db.prepare(
+        `UPDATE ${callJobsTable}
+         SET state = ?, lock_until = NULL, last_error = ?, updated_at = ?
+         WHERE id = ?`
+      ).run(state, lastError ?? null, new Date().toISOString(), jobId);
+    } finally {
+      db.close();
+    }
+  }
+
+  lockJob(jobId: string, lockUntilIso: string): void {
+    const db = openDatabase();
+
+    try {
+      db.prepare(
+        `UPDATE ${callJobsTable}
+         SET state = ?, lock_until = ?, updated_at = ?
+         WHERE id = ?`
+      ).run("LOCKED", lockUntilIso, new Date().toISOString(), jobId);
+    } finally {
+      db.close();
+    }
+  }
+
   getStateCounts(campaignId: string): CallJobStateCounts {
     const jobs = this.getByCampaignId(campaignId);
 
